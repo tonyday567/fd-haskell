@@ -143,9 +143,18 @@
   (or (locate-dominating-file default-directory "stack.yaml")
       (apply old-fn r)))
 
+
+(defvar-local fd-haskell--flycheck-stack-default-directory nil)
+(defun flycheck-haskell--find-stack-default-directory-ad (old-fn)
+  (if (null fd-haskell--flycheck-stack-default-directory)
+      (setq fd-haskell--flycheck-stack-default-directory (funcall old-fn))
+    fd-haskell--flycheck-stack-default-directory))
+
 (defun fd-haskell--advise-haskell-mode ()
   (advice-add 'haskell-process-interrupt :around #'haskell-process-interrupt-ad)
   (advice-add 'haskell-interactive-handle-expr :around #'haskell-process-guard-idle)
+  (advice-add 'flycheck-haskell--find-stack-default-directory
+              :around #'flycheck-haskell--find-stack-default-directory-ad)
   (advice-add 'haskell-process-interrupt :around #'haskell-cabal--find-tags-dir-ad))
 
 
@@ -176,13 +185,25 @@
                        (ad-get-advice-info-field #'save-buffer 'after))))
       (ad-advice-set-enabled adv nil))
   (setq-local find-tag-default-function 'fd-haskell-find-tag-default)
-  (if (featurep 'floskell)
-      (require 'floskell)
-    (warn "install floskell: stack install floskell")))
+  (floskell-mode))
+
+
+(defconst yasnippet-snippets-dir
+  (expand-file-name
+   "snippets"
+   (file-name-directory
+    ;; Copied from ‘f-this-file’ from f.el.
+    (cond
+     (load-in-progress load-file-name)
+     ((and (boundp 'byte-compile-current-file) byte-compile-current-file)
+      byte-compile-current-file)
+     (:else (buffer-file-name))))))
 
 ;;;###autoload
 (defun fd-haskell-configure-haskell-mode ()
   "Run once."
+  (add-to-list 'yas-snippet-dirs 'yasnippet-snippets-dir t)
+  (yas-load-directory yasnippet-snippets-dir t)
   (fd-haskell--advise-haskell-mode)
   (add-hook 'haskell-mode-hook 'fd-haskell-mode)
   (remove-hook 'haskell-mode-hook 'turn-on-haskell-doc-mode)

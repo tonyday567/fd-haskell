@@ -452,5 +452,4 @@ prompt to insert one."
                (flycheck-error-new-at line col 'error
                                       (format "Expected module name %s" inf))))))))))
 
-
 (provide 'fd-haskell-modules)
