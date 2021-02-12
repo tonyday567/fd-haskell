@@ -24,11 +24,6 @@
                                      src-dirs))))
             (delete-if-not 'file-exists-p full-paths)))))))
 
-(defmacro with-cabal-file-buffer (&rest body)
-  `(let ((cabal-file (haskell-cabal-find-file)))
-     (if (null cabal-file) (error "Not in haskell project.")
-       (with-current-buffer (find-file-noselect cabal-file)
-         ,@body))))
 
 (defun haskell-jump-test-to-src ()
   (interactive)

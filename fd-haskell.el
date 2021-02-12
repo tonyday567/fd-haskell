@@ -30,6 +30,7 @@
 
 (require 'compile)
 (require 'flycheck)
+(require 'yasnippet)
 
 (require 'haskell-indentation)
 (require 'haskell-interactive-mode)
@@ -38,6 +39,7 @@
 
 (require 'fd-gud-haskell)
 (require 'fd-haskell-holes)
+(require 'fd-haskell-tags)
 (require 'fd-haskell-insert-definition)
 (require 'fd-haskell-ligatures)
 (require 'fd-haskell-modules)
@@ -188,7 +190,7 @@
   (floskell-mode))
 
 
-(defconst yasnippet-snippets-dir
+(defconst fd-haskell-yasnippet-snippets-dir
   (expand-file-name
    "snippets"
    (file-name-directory
@@ -202,7 +204,7 @@
 ;;;###autoload
 (defun fd-haskell-configure-haskell-mode ()
   "Run once."
-  (add-to-list 'yas-snippet-dirs 'yasnippet-snippets-dir t)
+  (add-to-list 'yas-snippet-dirs 'fd-haskell-yasnippet-snippets-dir t)
   (yas-load-directory yasnippet-snippets-dir t)
   (fd-haskell--advise-haskell-mode)
   (add-hook 'haskell-mode-hook 'fd-haskell-mode)

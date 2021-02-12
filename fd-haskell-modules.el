@@ -1,4 +1,6 @@
 (require 'haskell-modules)
+(require 'haskell-navigate-imports)
+(require 'dash)
 
 (defconst haskell-language-pragmas
   '("CPP"
@@ -326,24 +328,6 @@
       (goto-char (point-min))
       (insert (format "{-# LANGUAGE %s #-}\n" pragma)))))
 
-
-;;;###autoload
-(defun haskell-add-import (module)
-  (interactive (list (completing-read
-                      "Module: "
-                      (seq-uniq
-                       (append
-                        haskell-base-modules
-                        (when (stack-root default-directory)
-                          (haskell-session-all-modules
-                           (haskell-modules-session))))))))
-  (save-restriction
-    (widen)
-    (save-excursion
-      (goto-char (point-max))
-      (haskell-navigate-imports)
-      (insert (concat "import " module "\n")))))
-
 (defun haskell-check-module-name-and-highlight ()
   (interactive)
   (save-match-data
@@ -365,28 +349,27 @@
 (defun haskell-cabal-get-key (key)
   (haskell-cabal-subsection-entry-list (haskell-cabal-section) key))
 
-(defun haskell-module-name (fname &optional src-dir)
+(defun haskell-path-as-module-name (fname &optional src-dir)
   (replace-regexp-in-string
    "\\.hs$" ""
-   (replace-regexp-in-string
-    "/" "."
-    (substring fname (+ 1 (length src-dir))))))
+   (if (null src-dir)
+       (file-name-base fname)
+     (replace-regexp-in-string
+      "/" "."
+      (substring fname (+ 1 (length src-dir)))))))
 
-(defun haskell-infer-module-name ()
+(defun haskell-infer-module-name (&optional file-name)
   "Infer the module name. (used in yasnippet)"
   (save-match-data
-    (let ((fname (buffer-file-name)))
-      (if (haskell-cabal-find-file)
-          (car
-           (with-cabal-file-buffer
-            (mapcar
-             (apply-partially 'haskell-module-name fname)
-             (delete-if-not
-              (lambda (x) (string-prefix-p x fname))
-              (mapcar
-               (apply-partially 'concat default-directory)
-               (haskell-cabal-get-key "hs-source-dirs"))))))
-        (file-name-base fname)))))
+    (let ((cabal-file (haskell-cabal-find-file))
+          (hs-file (or file-name (buffer-file-name))))
+      (if (null cabal-file) (file-name-base fname)
+        (with-current-buffer (find-file-noselect cabal-file)
+          (let* ((source-dirs
+                  (mapcar #'expand-file-name (haskell-cabal-get-key "hs-source-dirs")))
+                 (valid-source-dirs
+                  (delete-if-not (lambda (x) (string-prefix-p x hs-file)) source-dirs)))
+            (haskell-path-as-module-name hs-file (car valid-source-dirs))))))))
 
 (defun haskell-kill-ring-save-declared-module-name ()
   (interactive)
@@ -415,10 +398,11 @@
       (format "%s | tr -s '[:space:]' | sort | uniq" find-cmd)))
 
 (defun fd-haskell-all-project-modules ()
-  (-flatten (mapcar
-             (lambda (path)
-               (split-string (shell-command-to-string (haskell--module-list-command path)) "\n"))
-             (fd-haskell--stack-root default-directory))))
+  (let ((stack-path (locate-dominating-file default-directory "stack.yaml")))
+    (split-string
+       (shell-command-to-string
+        (fd-haskell--module-list-command (expand-file-name stack-path)))
+       "\n")))
 
 ;;;###autoload
 (defun fd-haskell-add-import (module)
@@ -426,7 +410,7 @@
 prompt to insert one."
   (interactive (list (completing-read
                       "Module: "
-                      (haskell-all-project-modules))))
+                      (fd-haskell-all-project-modules))))
   (save-restriction
     (widen)
     (save-excursion
