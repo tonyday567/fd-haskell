@@ -4,6 +4,7 @@
 
 (defconst haskell-language-pragmas
   '("CPP"
+    "DerivingVia"
     "OverlappingInstances"
     "UndecidableInstances"
     "IncoherentInstances"
@@ -71,6 +72,8 @@
     "FunctionalDependencies"
     "UnicodeSyntax"
     "ExistentialQuantification"
+    "QuantifiedConstraints"
+    "ImpredicativeTypes"
     "MagicHash"
     "EmptyDataDecls"
     "KindSignatures"
@@ -363,7 +366,7 @@
   (save-match-data
     (let ((cabal-file (haskell-cabal-find-file))
           (hs-file (or file-name (buffer-file-name))))
-      (if (null cabal-file) (file-name-base fname)
+      (if (null cabal-file) (file-name-base file-name)
         (with-current-buffer (find-file-noselect cabal-file)
           (let* ((source-dirs
                   (mapcar #'expand-file-name (haskell-cabal-get-key "hs-source-dirs")))
@@ -384,7 +387,7 @@
       (save-restriction
         (widen)
         (goto-char (point-min))
-        (re-search-forward "^module[[:space:]]*\\([a-zA-Z.]*\\)")
+        (re-search-forward "^module[[:space:]]*\\([a-zA-Z.0-9]*\\)")
         (match-string-no-properties 1)))))
 
 (defun fd-haskell--stack-root (dir)

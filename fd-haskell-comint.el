@@ -486,7 +486,7 @@ Do not set this variable directly, instead use
            haskell-shell--first-prompt-received-output-buffer)
       (set (make-local-variable 'haskell-shell--first-prompt-received) t)
       (setq-local haskell-shell--first-prompt-received-output-buffer nil)
-      (with-current-buffer (current-buffer)
+      (save-current-buffer
         (let ((inhibit-quit nil))
           (run-hooks 'haskell-shell-first-prompt-hook)))))
   output)
@@ -599,8 +599,6 @@ variable.
   (compilation-shell-minor-mode 1)
   (define-key haskell-comint-mode-map (kbd "C-c C-z")
     'haskell-shell-switch-from-shell)
-  (define-key haskell-comint-mode-map (kbd "TAB")
-    'haskell-shell-completion-at-point)
   ;; Some GUD functionality
   (define-key haskell-comint-mode-map (kbd "C-x SPC")
     'haskell-comint-set-breakpoint)
@@ -894,35 +892,7 @@ This is for compatibility with Emacs < 24.4."
          comint-last-prompt)
         (t nil)))
 
-;;; Internal
-(defvar haskell-shell-internal-buffer nil
-  "Current internal shell buffer for the current buffer.
-This is really not necessary at all for the code to work but it's
-there for compatibility with CEDET.")
-
-
-(defun run-haskell-comint-internal ()
-  "Run an inferior Internal Haskell process.
-Input and output via buffer named after
-`haskell-shell-internal-buffer-name' and what
-`haskell-shell-internal-get-process-name' returns.
-
-This new kind of shell is intended to be used for generic
-communication related to defined configurations; the main
-difference with global or dedicated shells is that these ones are
-attached to a configuration, not a buffer.  This means that can
-be used for example to retrieve the sys.path and other stuff,
-without messing with user shells.  Note that
-`haskell-shell-font-lock-enable' and `haskell-comint-mode-hook'
-are set to nil for these shells, so setup codes are not sent at
-startup."
-  (let ((haskell-shell-font-lock-enable nil)
-        (haskell-comint-mode-hook nil))
-    (get-buffer-process
-     (haskell-shell-make-comint
-      (haskell-shell-calculate-command)
-      (haskell-shell-internal-get-process-name) nil t))))
-
+;;; Interna
 (defun haskell-shell-internal-get-process-name ()
   "Calculate the appropriate process name for Internal Haskell process.
 The name is calculated from `haskell-shell-global-buffer-name' and
@@ -1133,8 +1103,7 @@ Argument OUTPUT is a string with the output from the comint process."
          tracked-buffer-window tracked-buffer-line-pos))
       (set-marker overlay-arrow-position tracked-buffer-line-pos)
       (pulse-momentary-highlight-region begin-pos end-pos)))
-    (pop-to-buffer tracked-buffer)
-    (switch-to-buffer-other-window shell-buffer)))
+    (pop-to-buffer tracked-buffer)))
 
 
 (defun haskell-pdbtrack-reposition ()
@@ -1150,7 +1119,7 @@ Argument OUTPUT is a string with the output from the comint process."
   (haskell-shell-send-string
    (format ":break %s %d %d"
            (haskell-declared-module-name)
-           (current-line)
+           (line-number-at-pos)
            (current-column))))
 ;; (defun haskell-comint-jump-to-prev-filepos ()
 ;;   (interactive)

@@ -175,6 +175,7 @@
   (if (executable-find "hasktags")
       (setq haskell-hasktags-path (executable-find "hasktags"))
     (warn "Couln't find hasktags."))
+  (yas-minor-mode nil)
   (define-key yas-minor-mode-map (kbd "<backtab>") 'yas-expand-from-trigger-key)
   (fd-haskell--move-keymap-to-top 'yas-minor-mode)
   (flycheck-mode)
@@ -202,15 +203,28 @@
      (:else (buffer-file-name))))))
 
 ;;;###autoload
+(defun haskell-flycheck-jump-to-error-file ()
+  (interactive)
+    (let ((fname
+           (with-current-buffer flycheck-error-message-buffer
+             (save-excursion
+               (goto-char (point-min))
+               (search-forward-regexp "In \"\\(.*\\.hs\\)\"")
+               (match-string 1)))))
+      (find-file fname)
+      (flycheck-clear)
+      (flycheck-buffer)))
+
+;;;###autoload
 (defun fd-haskell-configure-haskell-mode ()
   "Run once."
+  (advice-add 'haskell-cabal--find-tags-dir :around #'haskell-cabal--find-tags-dir-ad)
   (add-to-list 'yas-snippet-dirs 'fd-haskell-yasnippet-snippets-dir t)
-  (yas-load-directory yasnippet-snippets-dir t)
+  (yas-load-directory fd-haskell-yasnippet-snippets-dir t)
   (fd-haskell--advise-haskell-mode)
   (add-hook 'haskell-mode-hook 'fd-haskell-mode)
   (remove-hook 'haskell-mode-hook 'turn-on-haskell-doc-mode)
   (add-hook 'haskell-cabal-mode-hook 'fd-haskell-cabal-hook)
   (defvar-local haskell-tags-file-dir nil)
   (fset 'haskell-cabal--find-tags-dir-old (symbol-function 'haskell-cabal--find-tags-dir)))
-
 (provide 'fd-haskell)
