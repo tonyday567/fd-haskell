@@ -113,7 +113,8 @@ Restart the Haskell shell after changing this variable for it to take effect."
   :type 'string
   :group 'haskell-comint)
 
-(defcustom haskell-shell-interpreter-args nil
+(defcustom haskell-shell-interpreter-args
+  '("--no-build" "--no-load")
   "Default arguments for the Haskell interpreter."
   :type 'string
   :group 'haskell-comint)
@@ -332,6 +333,7 @@ killed."
                   (mapconcat #'identity args " ")))
             (with-current-buffer buffer
               (set (make-local-variable 'haskell-shell--loaded-file) nil)
+              (message "$ %s" cmd)
               (haskell-comint-mode))
             (when show (display-buffer buffer))
             (and internal (set-process-query-on-exit-flag process nil))))
