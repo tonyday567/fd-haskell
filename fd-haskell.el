@@ -49,6 +49,11 @@
 
 ;; Make sure our mode overrides interactive-haskell-mode
 
+
+
+(rx-define any-word (&rest ws)
+  (eval (cons '| (mapcar (lambda (w) `(: word-start ,w word-end)) (list ws)))))
+
 (add-to-list
  'haskell-compilation-error-regexp-alist
  '("^[[:space:]]+[[:word:]'-_]+, called at \\(\\([[:word:]]*/\\)*[[:word:]]+\\.hs\\):\\([[:digit:]]+\\):\\([[:digit:]]+\\) in " 1 2 (3 . 4) 0))
@@ -141,11 +146,6 @@
   (haskell-process-reset (haskell-commands-process)))
 
 
-(defun haskell-cabal--find-tags-dir-ad (old-fn &rest r)
-  (or (locate-dominating-file default-directory "stack.yaml")
-      (apply old-fn r)))
-
-
 (defvar-local fd-haskell--flycheck-stack-default-directory nil)
 (defun flycheck-haskell--find-stack-default-directory-ad (old-fn)
   (if (null fd-haskell--flycheck-stack-default-directory)
@@ -163,7 +163,7 @@
 ;;;###autoload
 (define-minor-mode fd-haskell-mode
   "Some extras for haskell-mode."
-  :lighter " DNB-Haskell"
+  :lighter " FD-Haskell"
   :keymap fd-haskell-mode-map
   (setq comment-auto-fill-gonly-comments nil
         haskell-font-lock-symbols t
@@ -184,10 +184,14 @@
   (haskell-decl-scan-mode 1)
   (haskell-comint-pdbtrack-mode 1)
   (rainbow-delimiters-mode 1)
+  (setq-local lsp-enable-xref nil)
+  (xref-etags-mode 1)
+  (company-mode)
   (if-let* ((adv (assq 'ghc-check-syntax-on-save
                        (ad-get-advice-info-field #'save-buffer 'after))))
       (ad-advice-set-enabled adv nil))
   (setq-local find-tag-default-function 'fd-haskell-find-tag-default)
+  (font-lock-flush)
   (floskell-mode))
 
 
@@ -214,6 +218,10 @@
       (find-file fname)
       (flycheck-clear)
       (flycheck-buffer)))
+(defface fd-haskell-trace-function-face
+  '((t (:background "pale green")))
+  "Face for trace function calls so they stand out.")
+
 
 ;;;###autoload
 (defun fd-haskell-configure-haskell-mode ()
