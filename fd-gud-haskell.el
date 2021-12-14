@@ -6,7 +6,7 @@
   "Find and obey the last filename-and-line marker from the debugger.
 Obeying it means displaying in another window the specified file and line."
   (interactive)
-  (flet ((col-pos (col) (save-excursion (beginning-of-line) (+ col (point)))))
+  (cl-flet ((col-pos (col) (save-excursion (beginning-of-line) (+ col (point)))))
     (when gud-last-frame
       (gud-set-buffer)
       ;; gud-last-frame => (file . line)

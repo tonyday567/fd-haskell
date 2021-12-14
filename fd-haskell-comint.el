@@ -824,7 +824,7 @@ completion."
                     whitespace
                     (group (+ digit))
                     whitespace
-                    (group ?" (* nonl) ?"))
+                    (group " (* nonl) ?"))
                    h0)
             (error "Invalid `:complete' response '%s'" h0))
           (let ((cnt1 (match-string 1 h0))
